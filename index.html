@@ -612,10 +612,10 @@ async function supabaseRequest(method, table, data, filter) {
 
 // Charger les résultats précédents de l'utilisateur
 async function loadUserResults() {
-  if (!userEmail) return;
+  if (!user.email) return;
   try {
     var data = await supabaseRequest("GET", "resultats", null,
-      "email=eq." + encodeURIComponent(userEmail) + "&order=created_at.desc");
+      "email=eq." + encodeURIComponent(user.email) + "&order=created_at.desc");
     if (data && data.length > 0) {
       data.forEach(function(row) {
         results[row.quiz_id] = { score: row.score, total: row.total, date: row.date_formatted };
@@ -626,23 +626,23 @@ async function loadUserResults() {
 
 // Sauvegarder un résultat
 async function saveResult(quizId, score, total) {
-  if (!userEmail) return;
+  if (!user.email) return;
   var today = new Date().toLocaleDateString("fr-FR");
   try {
     // Vérifier si un résultat existe déjà pour cet utilisateur + quiz
     var existing = await supabaseRequest("GET", "resultats", null,
-      "email=eq." + encodeURIComponent(userEmail) + "&quiz_id=eq." + quizId);
+      "email=eq." + encodeURIComponent(user.email) + "&quiz_id=eq." + quizId);
     
     if (existing && existing.length > 0) {
       // Mettre à jour
       await supabaseRequest("PATCH", "resultats", {
         score: score, total: total, date_formatted: today
-      }, "email=eq." + encodeURIComponent(userEmail) + "&quiz_id=eq." + quizId);
+      }, "email=eq." + encodeURIComponent(user.email) + "&quiz_id=eq." + quizId);
     } else {
       // Créer
       await supabaseRequest("POST", "resultats", {
-        email: userEmail,
-        nom: userName,
+        email: user.email,
+        nom: user.prenom + " " + user.nom,
         quiz_id: quizId,
         score: score,
         total: total,
