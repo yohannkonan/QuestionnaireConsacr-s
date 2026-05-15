@@ -554,6 +554,7 @@ function nextQ(){
 function showRes(){
   var quiz=getQuiz(); var tot=quiz.qdata.length; var sc=qs.score;
   results[qs.id]={score:sc,total:tot,date:new Date().toLocaleDateString("fr-FR")};
+  saveResult(qs.id, sc, tot);
   document.getElementById("r-num").textContent=sc;
   document.getElementById("s-res").querySelector(".sd").textContent=" /"+tot;
   var pct=Math.round((sc/tot)*100);
@@ -586,6 +587,72 @@ for (var i=0; i<allScreens.length; i++) {
   document.getElementById(allScreens[i]).style.display = "none";
 }
 document.getElementById("s-id").style.display = "flex";
+
+// ══ SUPABASE CONFIG ══
+var SUPABASE_URL = "https://rsxkqqsouupgzflvstey.supabase.co";
+var SUPABASE_KEY = "sb_publishable_Omu7ws6KaMjMPDjZXeml4w_E0aVCm5r";
+
+async function supabaseRequest(method, table, data, filter) {
+  var url = SUPABASE_URL + "/rest/v1/" + table;
+  if (filter) url += "?" + filter;
+  var opts = {
+    method: method,
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer " + SUPABASE_KEY,
+      "Content-Type": "application/json",
+      "Prefer": method === "POST" ? "return=representation" : ""
+    }
+  };
+  if (data) opts.body = JSON.stringify(data);
+  var res = await fetch(url, opts);
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+// Charger les résultats précédents de l'utilisateur
+async function loadUserResults() {
+  if (!userEmail) return;
+  try {
+    var data = await supabaseRequest("GET", "resultats", null,
+      "email=eq." + encodeURIComponent(userEmail) + "&order=created_at.desc");
+    if (data && data.length > 0) {
+      data.forEach(function(row) {
+        results[row.quiz_id] = { score: row.score, total: row.total, date: row.date_formatted };
+      });
+    }
+  } catch(e) { console.log("Supabase load error:", e); }
+}
+
+// Sauvegarder un résultat
+async function saveResult(quizId, score, total) {
+  if (!userEmail) return;
+  var today = new Date().toLocaleDateString("fr-FR");
+  try {
+    // Vérifier si un résultat existe déjà pour cet utilisateur + quiz
+    var existing = await supabaseRequest("GET", "resultats", null,
+      "email=eq." + encodeURIComponent(userEmail) + "&quiz_id=eq." + quizId);
+    
+    if (existing && existing.length > 0) {
+      // Mettre à jour
+      await supabaseRequest("PATCH", "resultats", {
+        score: score, total: total, date_formatted: today
+      }, "email=eq." + encodeURIComponent(userEmail) + "&quiz_id=eq." + quizId);
+    } else {
+      // Créer
+      await supabaseRequest("POST", "resultats", {
+        email: userEmail,
+        nom: userName,
+        quiz_id: quizId,
+        score: score,
+        total: total,
+        date_formatted: today
+      }, null);
+    }
+    console.log("Résultat sauvegardé ✓");
+  } catch(e) { console.log("Supabase save error:", e); }
+}
+
 </script>
 </body>
 </html>
