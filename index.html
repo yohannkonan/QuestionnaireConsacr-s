@@ -177,6 +177,7 @@ body { background:var(--pd); color:var(--wh); font-family:var(--fb); min-height:
 .opt.correct { border-color:var(--ok); background:var(--okb); color:var(--ok); }
 .opt.wrong   { border-color:var(--ko); background:var(--kob); color:var(--ko); }
 .opt.dimmed  { opacity:0.35; }
+  .opt.missed  { border-color:var(--ok); background:var(--okb); color:var(--ok); opacity:0.7; }
 .opt-l { width:28px; height:28px; min-width:28px; border-radius:4px; background:var(--pp); display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:500; color:var(--pm); transition:all 0.18s; flex-shrink:0; }
 .opt:not(.answered):hover .opt-l { background:var(--pm); color:var(--wh); }
 .opt.correct .opt-l { background:var(--ok); color:var(--wh); }
@@ -211,6 +212,18 @@ body { background:var(--pd); color:var(--wh); font-family:var(--fb); min-height:
 .rev-q { color:var(--pm); margin-bottom:3px; font-size:0.72rem; }
 .rev-a { font-weight:500; } .rev-a.ok{color:var(--ok)} .rev-a.ko{color:var(--ko)}
 .rev-pt { font-family:var(--fd); font-size:1.1rem; white-space:nowrap; } .rev-pt.ok{color:var(--ok)} .rev-pt.ko{color:var(--ko)}
+
+
+  /* ── TIMER ── */
+  .timer-wrap { display:flex; align-items:center; gap:12px; margin-bottom:2rem; position:relative; z-index:1; }
+  .timer-circle { position:relative; width:56px; height:56px; flex-shrink:0; }
+  .timer-svg { transform:rotate(-90deg); }
+  .timer-bg { fill:none; stroke:rgba(255,255,255,0.15); stroke-width:4; }
+  .timer-fill { fill:none; stroke:var(--orb); stroke-width:4; stroke-linecap:round; stroke-dasharray:138; stroke-dashoffset:0; transition:stroke-dashoffset 1s linear, stroke 0.3s; }
+  .timer-fill.urgent { stroke:#ff4444; }
+  .timer-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--fd); font-size:1.1rem; color:var(--wh); letter-spacing:0.05em; }
+  .timer-num.urgent { color:#ff4444; }
+  .timer-label { font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--pl); }
 
 @keyframes slideIn { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
 @keyframes fadeUp  { from{opacity:0;transform:translateY(10px)}  to{opacity:1;transform:translateY(0)} }
@@ -311,6 +324,16 @@ body { background:var(--pd); color:var(--wh); font-family:var(--fb); min-height:
   <div class="quiz-split">
     <div class="ql">
       <div class="q-n" id="q-num">Question 01</div>
+    <div class="timer-wrap">
+      <div class="timer-circle">
+        <svg class="timer-svg" width="56" height="56" viewBox="0 0 56 56">
+          <circle class="timer-bg" cx="28" cy="28" r="22"/>
+          <circle class="timer-fill" id="timer-fill" cx="28" cy="28" r="22"/>
+        </svg>
+        <div class="timer-num" id="timer-num">20</div>
+      </div>
+      <div class="timer-label">secondes restantes</div>
+    </div>
       <h2 class="q-t" id="q-txt"></h2>
     </div>
     <div class="qr" id="opts"></div>
@@ -353,7 +376,7 @@ var quizzes = [
   {
     id:"q1", num:"Questionnaire 01",
     title:"ENTRETIEN\nAVEC UNE\nÂME",
-    formation:"Formation Pasteur Serge",
+    formation:"Formation Académie des Encadrants",
     verse:"Bonne révision à tous ! On a appris de belles choses ensemble — c'est l'heure de voir ce qui a bien atterri 🙌",
     about:"Ce questionnaire couvre les techniques fondamentales de l'entretien pastoral : l'accueil, le cadre, le contrat, l'écoute active et les étapes de conduite.",
     questions:10, duration:"~5 min",
@@ -506,6 +529,72 @@ function restartQuiz(){startQuiz();}
 
 function getQuiz(){for(var i=0;i<quizzes.length;i++){if(quizzes[i].id===qs.id)return quizzes[i];}return null;}
 
+
+// ── TIMER ──
+var timerInterval = null;
+var TIMER_DURATION = 20;
+
+function startTimer() {
+  clearInterval(timerInterval);
+  var remaining = TIMER_DURATION;
+  var circumference = 138;
+  var fill = document.getElementById("timer-fill");
+  var num = document.getElementById("timer-num");
+  if (!fill || !num) return;
+
+  fill.style.strokeDashoffset = 0;
+  fill.classList.remove("urgent");
+  num.classList.remove("urgent");
+  num.textContent = remaining;
+
+  timerInterval = setInterval(function() {
+    remaining--;
+    if (!document.getElementById("timer-num")) { clearInterval(timerInterval); return; }
+    
+    var offset = circumference * (1 - remaining / TIMER_DURATION);
+    document.getElementById("timer-fill").style.strokeDashoffset = offset;
+    document.getElementById("timer-num").textContent = remaining;
+
+    if (remaining <= 8) {
+      document.getElementById("timer-fill").classList.add("urgent");
+      document.getElementById("timer-num").classList.add("urgent");
+    }
+
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      if (!qs.ans) {
+        // Temps écoulé → on force la réponse incorrecte puis on passe
+        timeUp();
+        setTimeout(function() { nextQ(); }, 2000);
+      }
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+}
+
+function timeUp() {
+  qs.ans = true;
+  var quiz = getQuiz();
+  var q = quiz.qdata[qs.cur];
+  for (var i = 0; i < q.opts.length; i++) {
+    var btn = document.getElementById("o" + i);
+    if (!btn) continue;
+    btn.classList.add("answered");
+    if (i === q.c) btn.classList.add("correct");
+    else btn.classList.add("dimmed");
+  }
+  qs.log.push({q: q.t, chosen: "⏱ Temps écoulé", correct: q.opts[q.c].v, ok: false});
+  var fb = document.getElementById("fb");
+  if (fb) {
+    fb.className = "fb show ko";
+    fb.innerHTML = '<span style="flex-shrink:0;font-size:16px">⏱</span><span>Temps écoulé ! Bonne réponse : <strong>' + q.opts[q.c].v + '</strong></span>';
+  }
+  setTimeout(function() { nextQ(); }, 2000);
+}
+
 function renderQ() {
   qs.ans=false;
   var quiz=getQuiz(); var q=quiz.qdata[qs.cur]; var tot=quiz.qdata.length;
@@ -525,10 +614,12 @@ function renderQ() {
   html+='<div class="fb" id="fb"></div>';
   html+='<button class="btn-nxt" id="bn" onclick="nextQ()">'+(qs.cur<tot-1?"Question suivante →":"Voir mes résultats →")+'</button>';
   document.getElementById("opts").innerHTML=html;
+  startTimer();
 }
 
 function pick(idx){
   if(qs.ans)return;
+  stopTimer();
   qs.ans=true;
   var quiz=getQuiz(); var q=quiz.qdata[qs.cur]; var ok=(idx===q.c);
   if(ok)qs.score++;
@@ -548,6 +639,7 @@ function pick(idx){
 }
 
 function nextQ(){
+  stopTimer();
   qs.cur++;
   var quiz=getQuiz();
   if(qs.cur>=quiz.qdata.length){showRes();return;}
@@ -568,7 +660,7 @@ function showRes(){
   else if(sc>=tot*.8){men="Très bien !";desc="Super travail ! L'essentiel est bien là. Quelques petits points à revoir, mais tu es vraiment sur la bonne voie.";}
   else if(sc>=tot*.6){men="Bien !";desc="Bonne base ! Prends le temps de revoir les points manqués, ça va vraiment consolider ta pratique. Tu y es presque !";}
   else if(sc>=tot*.4){men="À retravailler";desc="C'est un bon début ! Quelques notions sont là, mais on t'encourage à relire le contenu de la formation — tu vas y arriver.";}
-  else{men="À reprendre";desc="Pas d'inquiétude ! Reprends la formation depuis le début avec le Pasteur Serge — chaque révision te rapproche un peu plus. Courage !";}
+  else{men="À reprendre";desc="Pas d'inquiétude ! Reprends la formation depuis le début avec le Formation Académie des Encadrants — chaque révision te rapproche un peu plus. Courage !";}
   document.getElementById("r-men").textContent=men;
   document.getElementById("r-desc").textContent=desc;
   var html="";
