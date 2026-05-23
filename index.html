@@ -85,7 +85,7 @@ body { background:var(--pd); color:var(--wh); font-family:var(--fb); min-height:
 .dash-htitle { font-family:var(--fd); font-size:clamp(2rem,4vw,3.5rem); color:var(--pd); letter-spacing:0.03em; text-transform:uppercase; line-height:1; }
 .dash-htitle em { font-family:var(--fs); font-style:italic; color:var(--or); text-transform:none; }
 
-.dash-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:3rem; animation:fadeUp 0.4s ease 0.1s both; }
+.dash-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:3rem; animation:fadeUp 0.4s ease 0.1s both; }
 .stat-card { background:var(--wh); border:1px solid var(--lid); border-radius:10px; padding:1.5rem; display:flex; align-items:center; gap:14px; }
 .stat-ico { width:44px; height:44px; border-radius:8px; background:var(--pp); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
 .stat-n { font-family:var(--fd); font-size:1.8rem; color:var(--pd); line-height:1; }
@@ -276,7 +276,7 @@ body { background:var(--pd); color:var(--wh); font-family:var(--fb); min-height:
     <div class="dash-stats">
       <div class="stat-card"><div class="stat-ico">📚</div><div><div class="stat-n" id="st-total">1</div><div class="stat-l">Quiz disponible</div></div></div>
       <div class="stat-card"><div class="stat-ico">✅</div><div><div class="stat-n" id="st-done">0</div><div class="stat-l">Quiz complété</div></div></div>
-      <div class="stat-card"><div class="stat-ico">⭐</div><div><div class="stat-n" id="st-best">—</div><div class="stat-l">Meilleur score</div></div></div>
+
     </div>
     <div class="section-title">Questionnaires de formation</div>
     <div class="quiz-grid" id="quiz-grid"></div>
@@ -401,6 +401,17 @@ var results = {};
 var qs = {id:"",cur:0,score:0,ans:false,log:[]};
 
 // ── NAVIGATION ──
+function logout() {
+  localStorage.removeItem("lc_user");
+  user = {prenom:"", nom:"", email:"", initials:""};
+  results = {};
+  // Vider les champs du formulaire
+  document.getElementById("f-prenom").value = "";
+  document.getElementById("f-nom").value = "";
+  document.getElementById("f-email").value = "";
+  goTo("s-id");
+}
+
 function goTo(id) {
   var all = ["s-id","s-dash","s-page","s-quiz","s-res"];
   for (var i=0;i<all.length;i++) {
@@ -442,14 +453,9 @@ function showDash() {
   document.getElementById("d-avatar").textContent=user.initials;
   document.getElementById("d-prenom").textContent=user.prenom;
   // Stats
-  var done=0,bestStr="—",bestPct=0;
-  for (var k in results) {
-    done++;
-    var p=Math.round((results[k].score/results[k].total)*100);
-    if(p>bestPct){bestPct=p;bestStr=results[k].score+"/"+results[k].total;}
-  }
+  var done=0;
+  for (var k in results) { done++; }
   document.getElementById("st-done").textContent=done;
-  document.getElementById("st-best").textContent=bestStr;
   // Cards
   var html="";
   for (var i=0;i<quizzes.length;i++) {
@@ -726,10 +732,13 @@ async function loadUserResults() {
   try {
     var data = await supabaseRequest("GET", "resultats", null,
       "email=eq." + encodeURIComponent(user.email) + "&order=created_at.desc");
-    if (data && data.length > 0) {
+    console.log("Supabase data:", data);
+    if (data && Array.isArray(data) && data.length > 0) {
+      results = {}; // reset avant de charger
       data.forEach(function(row) {
         results[row.quiz_id] = { score: row.score, total: row.total, date: row.date_formatted };
       });
+      console.log("Résultats chargés:", results);
     }
   } catch(e) { console.log("Supabase load error:", e); }
 }
