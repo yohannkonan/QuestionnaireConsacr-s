@@ -562,7 +562,7 @@ function showVideos() {
   } else {
     for (var i = 0; i < videos.length; i++) {
       var v = videos[i];
-      html += '<div style="background:#fff;border:1px solid var(--lid);border-radius:12px;overflow:hidden;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 40px rgba(91,45,142,0.12)'" onmouseout="this.style.transform='';this.style.boxShadow=''">';
+      html += '<div style="background:#fff;border:1px solid var(--lid);border-radius:12px;overflow:hidden;transition:all 0.2s;">';
       // Header carte
       html += '<div style="background:var(--pd);padding:1.5rem;position:relative;overflow:hidden;">';
       html += '<div style="position:absolute;top:-30%;right:-10%;width:160px;height:160px;background:radial-gradient(circle,rgba(139,69,212,0.35) 0%,transparent 65%);pointer-events:none;"></div>';
@@ -577,7 +577,7 @@ function showVideos() {
       html += '</div>';
       html += '<p style="font-size:0.82rem;color:#666;line-height:1.6;margin-bottom:1.25rem;font-weight:300;">' + v.desc + '</p>';
       if (v.dispo) {
-        html += '<a href="' + v.lien + '" target="_blank" style="display:block;width:100%;padding:12px;background:var(--or);color:#fff;font-family:var(--fd);font-size:0.95rem;letter-spacing:0.1em;text-transform:uppercase;border:none;border-radius:6px;cursor:pointer;text-align:center;text-decoration:none;transition:background 0.2s;" onmouseover="this.style.background='var(--orb)'" onmouseout="this.style.background='var(--or)'">▶ Regarder la rediffusion</a>';
+        html += '<a href="' + v.lien + '" target="_blank" style="display:block;width:100%;padding:12px;background:var(--or);color:#fff;font-family:var(--fd);font-size:0.95rem;letter-spacing:0.1em;text-transform:uppercase;border:none;border-radius:6px;cursor:pointer;text-align:center;text-decoration:none;">▶ Regarder la rediffusion</a>';
       } else {
         html += '<div style="width:100%;padding:12px;background:var(--pp);color:var(--pm);font-family:var(--fd);font-size:0.95rem;letter-spacing:0.1em;text-transform:uppercase;border-radius:6px;text-align:center;opacity:0.7;">Bientôt disponible</div>';
       }
