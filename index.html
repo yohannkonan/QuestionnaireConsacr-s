@@ -463,12 +463,12 @@ function showDash() {
     var q=quizzes[i]; var r=results[q.id];
     var scHtml=r ? '<span class="res-sc '+(r.score>=r.total*.8?"good":r.score>=r.total*.5?"mid":"bad")+'">'+r.score+" / "+r.total+'</span>'
                  : '<span class="res-sc none">Pas encore fait</span>';
-    html+='<div class="qcard" onclick="openQuizPage(\''+q.id+'\')">';
-    html+='<div class="qcard-top"><div class="qcard-num">'+q.num+'</div><div class="qcard-title">'+q.title.replace(/\n/g," ")+'</div></div>';
+    html+='<div class="qcard">';
+    html+='<div class="qcard-top" onclick="openQuizPage(\''+q.id+'\')" style="cursor:pointer"><div class="qcard-num">'+q.num+'</div><div class="qcard-title">'+q.title.replace(/\n/g," ")+'</div></div>';
     html+='<div class="qcard-body">';
     html+='<div class="qcard-meta"><div class="mchip">❓ '+q.questions+' questions</div><div class="mchip">⏱ '+q.duration+'</div></div>';
     html+='<div class="qcard-res"><span class="res-lbl">Dernier résultat</span>'+scHtml+'</div>';
-    html+='<button class="qcard-btn">'+(r?"Recommencer":"Commencer")+' →</button>';
+    html+='<button class="qcard-btn" onclick="openQuizPage(\''+q.id+'\')">'+(r?"Recommencer":"Commencer")+' →</button>';
     html+='</div></div>';
   }
   // Placeholder
